@@ -134,4 +134,3 @@ If you encounter rendering issues:
 ## License
 
 This project is available under the MIT License.
-
