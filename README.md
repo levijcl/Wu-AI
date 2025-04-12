@@ -13,6 +13,7 @@ I basically don't understand what's going on, the purpose of this project is to 
 The `dragon_gate_env.py` is basically copied from [here](https://gymnasium.farama.org/environments/toy_text/blackjack/#information)
 
 The font and img both download from [here](https://github.com/openai/gym/tree/master/gym/envs/toy_text)
+
 ## Game Rules
 
 Dragon Gate is a card game where players bet on whether a third card will fall between two initial cards:
@@ -35,17 +36,21 @@ Dragon Gate is a card game where players bet on whether a third card will fall b
 ## Installation
 
 ### Prerequisites
+
 - Python 3.7+
 - pip (Python package manager)
 
 ### Setup
+
 1. Clone this repository
+
    ```bash
    git clone <repository-url>
    cd stable-baseline3
    ```
 
 2. Install required dependencies
+
    ```bash
    pip install numpy gymnasium stable-baselines3 matplotlib pandas pygame
    ```
@@ -89,6 +94,7 @@ python tournament_demo.py --mode visualize
 ```
 
 The tournament system allows you to:
+
 1. Train multiple agents with different algorithms (A2C, PPO, DQN)
 2. Have agents compete against each other
 3. Analyze which strategies perform best
@@ -97,12 +103,14 @@ The tournament system allows you to:
 ## Visualization
 
 When running a full tournament, the system generates:
+
 - `tournament_results.png`: Heatmap of agent performance against each other
 - `agent_rewards.png`: Bar chart showing total rewards earned by each agent
 
 ## Extending the Project
 
 You can customize the tournament by:
+
 - Adding new agent types with different hyperparameters
 - Creating your own tournament scenarios
 - Modifying the Dragon Gate environment parameters
@@ -118,6 +126,7 @@ Agent("Custom-Strategy", PPO, "MultiInputPolicy",
 ## Troubleshooting
 
 If you encounter rendering issues:
+
 - The system will automatically fall back to text-based rendering if pygame is not installed
 - Use `--mode quick` for faster development and testing
 - Make sure the card images in the `img/` directory are available
@@ -125,3 +134,4 @@ If you encounter rendering issues:
 ## License
 
 This project is available under the MIT License.
+
