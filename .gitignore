@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+models/
+tournament_results.png
+agent_rewards.png
