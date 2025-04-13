@@ -172,7 +172,7 @@ class DragonGateEnv(gym.Env):
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
-        self.pot = self.min_bet * self.num_players * 10
+        self.pot = self.min_bet * self.num_players
         self.money = self.starting_money
         self.round = 0
 
@@ -204,14 +204,24 @@ class DragonGateEnv(gym.Env):
         bet_proportion = float(action[0])
         bet_proportion = np.clip(bet_proportion, 0, 1)
 
-        max_bet = min(self.money, self.pot)
+        # Check if cards are equal to apply the right penalty multiple
+        penalty_multiple = 3 if self.card1 == self.card2 else 2
+
+        # Limit max bet to ensure player won't go into debt even with penalties
+        max_bet = min(self.money // penalty_multiple, self.pot)
+        max_bet = max(max_bet, 1)  # Ensure max_bet is at least 1
+
         min_bet_actual = min(self.min_bet, max_bet)  # Ensure min_bet doesn't exceed what player has
+        min_bet_actual = max(min_bet_actual, 1)  # Ensure minimum bet is at least 1
 
         # Scale the normalized bet to the actual range
         if max_bet > min_bet_actual:
             bet_amount = int(min_bet_actual + bet_proportion * (max_bet - min_bet_actual))
         else:
             bet_amount = min_bet_actual
+
+        # Final check to ensure bet is at least 1
+        bet_amount = max(bet_amount, 1)
 
         # Extract high/low choice for equal cards
         high_low_choice = 1 if action[1] > 0.5 else 0  # 0 = lower, 1 = higher
