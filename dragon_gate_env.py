@@ -63,14 +63,19 @@ class DragonGateEnv(gym.Env):
     }
 
     def __init__(self, render_mode: Optional[str] = None, num_players: int = 4, min_bet: int = 100,
-                 starting_money: int = 1000, max_rounds: int = 100):
+                 starting_money: int = 1000, max_rounds: int = 100, num_decks: int = 2):
         self.num_players = num_players
         self.min_bet = min_bet
         self.starting_money = starting_money
         self.max_rounds = max_rounds
-        self.pot = self.min_bet * self.num_players
+        self.pot = self.min_bet * self.num_players * 10
         self.money = self.starting_money
         self.round = 0
+        self.num_decks = num_decks
+
+        # Card deck related attributes
+        self.deck = []
+        self.discard_pile = []
 
         # Define action space: (bet_amount, high_low_choice)
         # bet_amount is normalized between 0-1, will be scaled to actual min-max
@@ -131,19 +136,56 @@ class DragonGateEnv(gym.Env):
             "money": self.money
         }
 
+    def initialize_deck(self):
+        """Initialize a deck with the specified number of standard decks"""
+        self.deck = []
+        self.discard_pile = []
+
+        # Create multiple decks
+        for _ in range(self.num_decks):
+            for suit in self.card_suits:
+                for value in range(1, 14):  # 1-13 (Ace to King)
+                    self.deck.append((value, suit))
+
+        # Shuffle the deck
+        self.shuffle_deck()
+
+    def shuffle_deck(self):
+        """Shuffle the current deck"""
+        self.np_random.shuffle(self.deck)
+
+    def draw_card(self):
+        """Draw a card from the deck. If deck is empty, shuffle discard pile back in."""
+        if not self.deck:
+            if not self.discard_pile:
+                # This should never happen in normal gameplay, but just in case
+                self.initialize_deck()
+            else:
+                # Move discard pile back to deck and shuffle
+                self.deck = self.discard_pile.copy()
+                self.discard_pile = []
+                self.shuffle_deck()
+
+        # Draw the top card
+        card = self.deck.pop(0)
+        return card
+
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
-        self.pot = self.min_bet * self.num_players
+        self.pot = self.min_bet * self.num_players * 10
         self.money = self.starting_money
         self.round = 0
 
-        # Deal initial two cards
-        self.card1 = self.np_random.integers(1, 14)  # 1-13
-        self.card2 = self.np_random.integers(1, 14)  # 1-13
+        # Initialize deck if it's the first time
+        if not hasattr(self, 'deck') or not self.deck:
+            self.initialize_deck()
 
-        # Assign random suits
-        self.card1_suit = self.np_random.choice(self.card_suits)
-        self.card2_suit = self.np_random.choice(self.card_suits)
+        # Deal initial two cards
+        card1 = self.draw_card()
+        card2 = self.draw_card()
+
+        self.card1, self.card1_suit = card1
+        self.card2, self.card2_suit = card2
 
         # Sort cards so card1 is always the smaller one (simplifies the game logic)
         if self.card1 > self.card2:
@@ -181,9 +223,8 @@ class DragonGateEnv(gym.Env):
             elif self.card1 == 13:  # If both cards are 13 (King), force "lower" since nothing can be higher
                 high_low_choice = 0
 
-        # Deal the third card
-        card3 = self.np_random.integers(1, 14)  # 1-13
-        card3_suit = self.np_random.choice(self.card_suits)
+        # Deal the third card from the deck
+        card3, card3_suit = self.draw_card()
 
         # Determine outcome
         reward = 0
@@ -243,13 +284,21 @@ class DragonGateEnv(gym.Env):
         elif self.render_mode == "ansi":
             self._render_text()
 
+        # Add used cards to discard pile
+        self.discard_pile.append((self.card1, self.card1_suit))
+        self.discard_pile.append((self.card2, self.card2_suit))
+        self.discard_pile.append((card3, card3_suit))
+
         # Deal new cards for next round if not terminated
         if not terminated:
-            self.card1 = self.np_random.integers(1, 14)
-            self.card2 = self.np_random.integers(1, 14)
-            self.card1_suit = self.np_random.choice(self.card_suits)
-            self.card2_suit = self.np_random.choice(self.card_suits)
+            # Deal two new cards from the deck
+            card1 = self.draw_card()
+            card2 = self.draw_card()
 
+            self.card1, self.card1_suit = card1
+            self.card2, self.card2_suit = card2
+
+            # Sort cards so card1 is always the smaller one (simplifies the game logic)
             if self.card1 > self.card2:
                 self.card1, self.card2 = self.card2, self.card1
                 self.card1_suit, self.card2_suit = self.card2_suit, self.card1_suit
@@ -324,12 +373,13 @@ class DragonGateEnv(gym.Env):
         output = "\n" + "="*50 + "\n"
         output += f"DRAGON GATE - Round: {self.round}\n"
         output += f"Pot: {self.pot} | Player Money: {self.money}\n"
+        output += f"Cards in deck: {len(self.deck)} | Cards in discard: {len(self.discard_pile)}\n"
 
         # Display the two initial cards
         output += f"\nInitial Cards: {card1_str} and {card2_str}\n"
 
         # Display the third card and result if available
-        if hasattr(self, 'card3'):
+        if hasattr(self, 'card3') and self.round != 0:
             card3_str = f"{self.card3_suit}{self.card_values[self.card3]}"
             output += f"Third Card: {card3_str}\n"
 

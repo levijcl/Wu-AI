@@ -28,7 +28,7 @@ gym.register(
 
 # Try to use graphical rendering with fallback to text-based if needed
 try:
-    env = gym.make('DragonGate-v0', render_mode="ansi", num_players=4, min_bet=100,
+    env = gym.make('DragonGate-v0', render_mode="human", num_players=4, min_bet=100,
                    starting_money=1000, max_rounds=100)
     print("Using graphical rendering")
 except:

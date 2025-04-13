@@ -184,12 +184,12 @@ class Tournament:
                             pot = 400
 
                             # Run a training match
+                            obs, _ = env.reset()
                             for round in range(10):  # Short matches for training
                                 if agent1_money <= 0 or agent2_money <= 0 or pot <= 0:
                                     break
 
                                 # Agent 1's turn
-                                obs, _ = env.reset()
                                 env.money = agent1_money
                                 env.pot = pot
 
@@ -206,7 +206,6 @@ class Tournament:
 
                                 # Agent 2's turn
                                 if agent1_money > 0 and pot > 0:
-                                    obs, _ = env.reset()
                                     env.money = agent2_money
                                     env.pot = pot
 
@@ -249,13 +248,13 @@ class Tournament:
         agent1_money = 1000
         agent2_money = 1000
         pot = initial_pot
+        obs, _ = env.reset()
 
         for round in range(num_rounds):
             if agent1_money <= 0 or agent2_money <= 0 or pot <= 0:
                 break
 
             # Agent 1's turn
-            obs, _ = env.reset()
             env.money = agent1_money
             env.pot = pot
 
@@ -274,7 +273,6 @@ class Tournament:
             # Agent 2's turn (if game not over)
             if agent1_money > 0 and pot > 0:
                 # Reset environment with new values
-                obs, _ = env.reset()
                 env.money = agent2_money
                 env.pot = pot
 
