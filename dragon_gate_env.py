@@ -174,6 +174,13 @@ class DragonGateEnv(gym.Env):
         # Extract high/low choice for equal cards
         high_low_choice = 1 if action[1] > 0.5 else 0  # 0 = lower, 1 = higher
 
+        # Override high/low choice in logical edge cases
+        if self.card1 == self.card2:
+            if self.card1 == 1:  # If both cards are 1, force "higher" since nothing can be lower
+                high_low_choice = 1
+            elif self.card1 == 13:  # If both cards are 13 (King), force "lower" since nothing can be higher
+                high_low_choice = 0
+
         # Deal the third card
         card3 = self.np_random.integers(1, 14)  # 1-13
         card3_suit = self.np_random.choice(self.card_suits)
