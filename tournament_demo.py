@@ -52,8 +52,8 @@ def create_full_tournament():
     for agent in agents:
         tournament.add_agent(agent)
 
-    # Train all agents
-    tournament.train_agents(total_timesteps=20000, verbose=1)
+    # Train all agents with adversarial training
+    tournament.train_agents(total_timesteps=20000, verbose=1, adversarial_training=True)
 
     # Save the trained agents
     for agent in agents:
