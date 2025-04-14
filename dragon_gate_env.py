@@ -536,10 +536,10 @@ class DragonGateEnv(gym.Env):
             self.hidden_card_img = self.pygame.image.load(os.path.join("img", "Card.png"))
 
             # Load all card images
-            for suit in self.card_suits:
+            for suit in self.game.card_suits:
                 for value in range(1, 14):
                     card_key = (suit, value)
-                    card_value_str = self.card_values[value]
+                    card_value_str = self.game.card_values[value]
 
                     # Construct filename (e.g., "img/CA.png" for Ace of Clubs)
                     file_name = f"{suit}{card_value_str}.png"
@@ -557,9 +557,12 @@ class DragonGateEnv(gym.Env):
         if not hasattr(self, 'card1') or not hasattr(self, 'card2'):
             return ""
 
+        # Get card values dictionary from game
+        card_values = self.game.card_values
+
         # Get card names with suit
-        card1_str = f"{self.card1_suit}{self.game.card_values[self.card1]}"
-        card2_str = f"{self.card2_suit}{self.game.card_values[self.card2]}"
+        card1_str = f"{self.card1_suit}{card_values[self.card1]}"
+        card2_str = f"{self.card2_suit}{card_values[self.card2]}"
 
         output = "\n" + "="*50 + "\n"
         output += f"DRAGON GATE - Round: {self.round}\n"
@@ -579,7 +582,7 @@ class DragonGateEnv(gym.Env):
 
         # Display the third card and result if available
         if hasattr(self, 'card3') and self.round != 0:
-            card3_str = f"{self.card3_suit}{self.game.card_values[self.card3]}"
+            card3_str = f"{self.card3_suit}{card_values[self.card3]}"
             output += f"Third Card: {card3_str}\n"
 
             if hasattr(self, 'last_bet'):
@@ -646,11 +649,14 @@ class DragonGateEnv(gym.Env):
         if hasattr(self, 'card3'):
             cards.append((self.card3, self.card3_suit))
 
+        # Get card values dictionary from game
+        card_values = self.game.card_values
+
         for i, (card_value, card_suit) in enumerate(cards):
             x = card_start_x + i * (card_width + card_spacing)
             y = card_y
 
-            # Get card image
+            # Get card image - key is suit then value
             card_key = (card_suit, card_value)
             if card_key in self.card_images:
                 # Use the loaded card image
@@ -662,7 +668,7 @@ class DragonGateEnv(gym.Env):
                 self.pygame.draw.rect(self.screen, white, (x, y, card_width, card_height))
                 self.pygame.draw.rect(self.screen, black, (x, y, card_width, card_height), 2)
 
-                value_str = self.game.card_values[card_value]
+                value_str = card_values[card_value]
                 card_text = self.font_medium.render(f"{card_suit}{value_str}", True, black)
                 self.screen.blit(card_text, (x + card_width//2 - card_text.get_width()//2,
                                          y + card_height//2 - card_text.get_height()//2))
@@ -697,10 +703,11 @@ class DragonGateEnv(gym.Env):
                     self.screen.blit(player_money_text, (150, y_offset + 30 + (i % 4) * 25))
 
         # Draw card range text
+        card_values = self.game.card_values  # Use the same variable consistently
         if self.card1 == self.card2:
             range_text = self.font_medium.render("Cards equal: Bet if next card will be higher or lower", True, white)
         else:
-            range_text = self.font_medium.render(f"Target: Card between {self.game.card_values[self.card1]} and {self.game.card_values[self.card2]}", True, white)
+            range_text = self.font_medium.render(f"Target: Card between {card_values[self.card1]} and {card_values[self.card2]}", True, white)
 
         self.screen.blit(range_text, (self.screen_width//2 - range_text.get_width()//2, info_y))
 

@@ -102,7 +102,7 @@ def test_saved_agents():
 def visualize_agent_behavior():
     """Visualize how different agents behave in various scenarios"""
     # Create the environment
-    env = gym.make("DragonGate-v0", render_mode="human", number_of_players=2)
+    env = gym.make("DragonGate-v0", render_mode="human", num_players=2)
 
     # Create different types of agents
     agents = [
