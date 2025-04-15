@@ -115,8 +115,11 @@ class DragonGateGame:
         Returns:
             Tuple of (reward, terminated)
         """
+        # Store the current player index to ensure we update the correct player
+        current_player_idx = self.current_player_idx
+
         # Get current player's money
-        current_money = self.player_moneys[self.current_player_idx]
+        current_money = self.player_moneys[current_player_idx]
 
         # Check if cards are equal to apply the right penalty multiple
         penalty_multiple = 3 if self.card1 == self.card2 else 2
@@ -185,8 +188,12 @@ class DragonGateGame:
                 current_money -= bet_amount
                 self.pot += bet_amount
 
-        # Update player's money
-        self.player_moneys[self.current_player_idx] = current_money
+        # Make sure pot and money don't go below 0
+        self.pot = max(0, self.pot)
+        current_money = max(0, current_money)
+
+        # Update player's money - use the stored player index to ensure we update the right player
+        self.player_moneys[current_player_idx] = current_money
 
         # Save the third card and other info
         self.card3 = card3
@@ -194,6 +201,7 @@ class DragonGateGame:
         self.last_bet = bet_amount
         self.last_reward = reward
         self.high_low_choice = high_low_choice
+        self.last_player_idx = current_player_idx  # Save which player just acted
 
         # Add used cards to discard pile
         self.discard_pile.append((self.card1, self.card1_suit))

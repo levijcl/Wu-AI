@@ -185,17 +185,12 @@ class Tournament:
                             # Get initial player money from the environment
                             agent1_money = info['all_player_money'][0]
                             agent2_money = info['all_player_money'][1]
-                            pot = 400
 
-                            # Set the pot after reset
-                            env.pot = pot
                             for round in range(10):  # Short matches for training
-                                if agent1_money <= 0 or agent2_money <= 0 or pot <= 0:
+                                if agent1_money <= 0 or agent2_money <= 0 or info["pot"] <= 0:
                                     break
 
                                 # Agent 1's turn
-                                env.pot = pot
-
                                 # Agent 1 makes a decision
                                 action1, _ = agent1.predict(obs)
                                 obs, reward1, terminated, truncated, info = env.step(action1)
@@ -209,8 +204,6 @@ class Tournament:
 
                                 # Agent 2's turn
                                 if agent1_money > 0 and pot > 0:
-                                    env.pot = pot
-
                                     action2, _ = agent2.predict(obs)
                                     obs, reward2, terminated, truncated, info = env.step(action2)
 
@@ -255,16 +248,11 @@ class Tournament:
         agent2_money = info['all_player_money'][1]
         pot = initial_pot
 
-        # Set the pot after reset
-        env.pot = pot
-
         for round in range(num_rounds):
             if agent1_money <= 0 or agent2_money <= 0 or pot <= 0:
                 break
 
             # Agent 1's turn
-            env.pot = pot
-
             # Agent 1 makes a decision
             action1, _ = agent1.predict(obs)
 
@@ -279,9 +267,6 @@ class Tournament:
 
             # Agent 2's turn (if game not over)
             if agent1_money > 0 and pot > 0:
-                # Set environment to use player 2
-                env.pot = pot
-
                 # Agent 2 makes a decision
                 action2, _ = agent2.predict(obs)
 

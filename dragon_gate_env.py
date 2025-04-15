@@ -113,7 +113,7 @@ class DragonGateEnv(gym.Env):
             "pot": spaces.Box(low=0, high=float('inf'), shape=(1,), dtype=np.float32),
             "player_money": spaces.Box(low=0, high=float('inf'), shape=(1,), dtype=np.float32)
         }
-        
+
         # Add all player money to observation space if more than one player
         # Use a fixed size array with padding for compatibility across different player counts
         # This ensures models trained with e.g. 4 players can be used in a 2-player game
@@ -267,13 +267,6 @@ class DragonGateEnv(gym.Env):
         bet_proportion = np.clip(bet_proportion, 0, 1)
         high_low_choice = 1 if action[1] > 0.5 else 0  # 0 = lower, 1 = higher
 
-        # Process the action through the game core
-        reward, terminated = self.game.process_bet(bet_proportion, high_low_choice)
-
-        # If we have simulated players and game isn't over, let them play
-        if not terminated and self.simulated_players:
-            self._simulate_other_players()
-
         # Update our copies of the game state
         self.card1 = self.game.card1
         self.card2 = self.game.card2
@@ -284,6 +277,13 @@ class DragonGateEnv(gym.Env):
         self.current_player_idx = self.game.current_player_idx
         self.money = self.game.player_moneys[self.current_player_idx]
         self.round = self.game.round
+
+        # Process the action through the game core
+        reward, terminated = self.game.process_bet(bet_proportion, high_low_choice)
+
+        # If we have simulated players and game isn't over, let them play
+        if not terminated and self.simulated_players:
+            self._simulate_other_players()
 
         # Copy other attributes for rendering
         if hasattr(self.game, 'card3'):
@@ -396,7 +396,7 @@ class DragonGateEnv(gym.Env):
         output += f"\nInitial Cards: {card1_str} and {card2_str}\n"
 
         # Display the third card and result if available
-        if hasattr(self, 'card3') and self.round != 0:
+        if hasattr(self, 'card3'):
             card3_str = f"{self.card3_suit}{card_values[self.card3]}"
             output += f"Third Card: {card3_str}\n"
 
