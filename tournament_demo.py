@@ -52,8 +52,8 @@ def create_full_tournament():
     for agent in agents:
         tournament.add_agent(agent)
 
-    # Train all agents
-    tournament.train_agents(total_timesteps=20000, verbose=1)
+    # Train all agents with adversarial training
+    tournament.train_agents(total_timesteps=20000, verbose=1, adversarial_training=True)
 
     # Save the trained agents
     for agent in agents:
@@ -102,7 +102,7 @@ def test_saved_agents():
 def visualize_agent_behavior():
     """Visualize how different agents behave in various scenarios"""
     # Create the environment
-    env = gym.make("DragonGate-v0", render_mode="human")
+    env = gym.make("DragonGate-v0", render_mode="human", num_players=2)
 
     # Create different types of agents
     agents = [

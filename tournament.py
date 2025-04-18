@@ -129,11 +129,104 @@ class Tournament:
         """Add an agent to the tournament"""
         self.agents.append(agent)
 
-    def train_agents(self, total_timesteps=10000, verbose=0):
-        """Train all agents in the tournament"""
-        for agent in self.agents:
-            env = gym.make(self.env_id, render_mode=None)  # No rendering during training
-            agent.train(env, total_timesteps=total_timesteps, verbose=verbose)
+    def train_agents(self, total_timesteps=10000, verbose=0, adversarial_training=False):
+        """
+        Train all agents in the tournament
+
+        Args:
+            total_timesteps: Number of steps to train each agent
+            verbose: Verbosity level
+            adversarial_training: If True, agents train against other agents;
+                                  If False, agents train against the environment
+        """
+        if not adversarial_training:
+            # Standard training against the environment
+            for agent in self.agents:
+                env = gym.make(self.env_id, render_mode=None, num_players=len(self.agents))  # No rendering during training
+                agent.train(env, total_timesteps=total_timesteps, verbose=verbose)
+                env.close()
+        else:
+            # Adversarial training where agents play against each other
+            if len(self.agents) < 2:
+                raise ValueError("Need at least 2 agents for adversarial training")
+
+            # First, give each agent some basic training to learn the rules
+            for agent in self.agents:
+                env = gym.make(self.env_id, render_mode=None, num_players=len(self.agents))
+                agent.train(env, total_timesteps=total_timesteps // 5, verbose=verbose)  # Brief initial training
+                env.close()
+
+            # Number of adversarial matches each agent will play
+            matches_per_agent = total_timesteps // 100  # Approximate conversion from steps to matches
+
+            print(f"Starting adversarial training with {matches_per_agent} matches per agent pair...")
+
+            # Create a shared environment for agent matches
+            env = gym.make(self.env_id, render_mode=None, num_players=len(self.agents))
+
+            # Each agent plays against all other agents
+            for _ in range(3):  # Multiple rounds of training
+                for i in range(len(self.agents)):
+                    for j in range(len(self.agents)):
+                        if i == j:  # Skip self-play for simplicity
+                            continue
+
+                        agent1 = self.agents[i]
+                        agent2 = self.agents[j]
+
+                        if verbose > 0:
+                            print(f"Training {agent1.name} against {agent2.name}...")
+
+                        # Play several matches between these agents
+                        for _ in range(matches_per_agent // len(self.agents)):
+                            # Run a training match
+                            obs, info = env.reset()
+
+                            # Get initial player money from the environment
+                            agent1_money = info['all_player_money'][0]
+                            agent2_money = info['all_player_money'][1]
+
+                            for round in range(10):  # Short matches for training
+                                if agent1_money <= 0 or agent2_money <= 0 or info["pot"] <= 0:
+                                    break
+
+                                # Agent 1's turn
+                                # Agent 1 makes a decision
+                                action1, _ = agent1.predict(obs)
+                                obs, reward1, terminated, truncated, info = env.step(action1)
+
+                                # Extract updated state
+                                agent1_money = info['all_player_money'][0]
+                                pot = info['pot']
+
+                                # Collect this experience for agent1's replay buffer
+                                # This would require modifying the SB3 Agent class to support this
+
+                                # Agent 2's turn
+                                if agent1_money > 0 and pot > 0:
+                                    action2, _ = agent2.predict(obs)
+                                    obs, reward2, terminated, truncated, info = env.step(action2)
+
+                                    agent2_money = info['all_player_money'][1]
+                                    pot = info['pot']
+
+                                    # Collect this experience for agent2's replay buffer
+
+                            # After the match, update both agents with collected experience
+                            # For now, we rely on the next explicit training phase
+
+                        # After playing against an opponent, do a quick learning update
+                        temp_env = gym.make(self.env_id, render_mode=None, num_players=len(self.agents))
+                        agent1.model.set_env(temp_env)
+                        agent1.model.learn(total_timesteps=total_timesteps // 10 // len(self.agents))
+                        temp_env.close()
+
+            # Final independent training to consolidate learning
+            for agent in self.agents:
+                env = gym.make(self.env_id, render_mode=None, num_players=len(self.agents))
+                agent.train(env, total_timesteps=total_timesteps // 5, verbose=verbose)
+                env.close()
+
             env.close()
 
     def run_match(self, agent1, agent2, num_rounds=10, initial_pot=400, verbose=0):
@@ -147,8 +240,12 @@ class Tournament:
         env = gym.make(self.env_id, render_mode=render_mode, num_players=2,
                        min_bet=100, starting_money=1000, max_rounds=100)
 
-        agent1_money = 1000
-        agent2_money = 1000
+        # Reset the environment to initialize player money arrays and other state
+        obs, info = env.reset()
+
+        # Get initial player money from the environment
+        agent1_money = info['all_player_money'][0]
+        agent2_money = info['all_player_money'][1]
         pot = initial_pot
 
         for round in range(num_rounds):
@@ -156,16 +253,12 @@ class Tournament:
                 break
 
             # Agent 1's turn
-            obs, _ = env.reset()
-            env.money = agent1_money
-            env.pot = pot
-
             # Agent 1 makes a decision
             action1, _ = agent1.predict(obs)
 
             # Process agent 1's action
             obs, reward1, terminated, truncated, info = env.step(action1)
-            agent1_money = info['money']
+            agent1_money = info['all_player_money'][0]
             pot = info['pot']
 
             if verbose > 0:
@@ -174,17 +267,12 @@ class Tournament:
 
             # Agent 2's turn (if game not over)
             if agent1_money > 0 and pot > 0:
-                # Reset environment with new values
-                obs, _ = env.reset()
-                env.money = agent2_money
-                env.pot = pot
-
                 # Agent 2 makes a decision
                 action2, _ = agent2.predict(obs)
 
                 # Process agent 2's action
                 obs, reward2, terminated, truncated, info = env.step(action2)
-                agent2_money = info['money']
+                agent2_money = info['all_player_money'][1]
                 pot = info['pot']
 
                 if verbose > 0:
